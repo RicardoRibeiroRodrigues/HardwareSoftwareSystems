@@ -1,4 +1,11 @@
-/* Implemente aqui sua versão em C da função ex3
- * presente no arquivo ex3.o
- * 
- * Chame sua função de ex3_solucao */
+long ex3_solucao(long a, long b) {
+    long count = 0, res = 0;
+    while (count < a) {
+        long resto = count % b;
+        if (!resto) {
+            res += count;
+        }
+        count++;
+    }
+    return res;
+}

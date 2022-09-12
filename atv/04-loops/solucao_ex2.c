@@ -1,6 +1,9 @@
-
-/* Implemente aqui sua versão em C da função soma_n
- * presente no arquivo ex2.o
- *
- * Chame sua função de soma_n_solucao */
-
+long soma_n_solucao(int a) {
+    int count = 0;
+    long res = 0;
+    while (count < a) {
+        res += count;
+        count++;
+    }
+    return res;
+}
