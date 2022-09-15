@@ -1,4 +1,13 @@
+#include <stdio.h>
+
 int ex5_solucao () {
-    // implemente sua resposta aqui.
-    // TODO: conserte valor de retorno e argumentos, se for necessário
+	int a = 1;
+	int count = 0;
+	while (a > 0) {
+		scanf("%d", &a);
+		if (a > 0){
+			count += a;
+		}
+	}
+	return count;
 }
