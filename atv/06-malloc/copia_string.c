@@ -4,9 +4,25 @@
 
 /* Copia string e retorna uma nova string */
 char *mystrcpy(char *stroriginal) {
-    /* Faça sua solução aqui!*/
-    /* Pode alterar tudo, inclusive o retorno*/
-    return NULL;
+    int tamanho = 0;
+    while (stroriginal[tamanho] != '\0') {
+        tamanho++;
+    }
+
+    char *str_copy = (char *) malloc(tamanho * sizeof(char) + 1);
+    
+    if (str_copy == NULL) {
+        perror("malloc");
+        exit(0);
+    }
+
+    for (int i = 0; i < tamanho; i++) {
+        str_copy[i] = stroriginal[i];
+    }
+
+    str_copy[tamanho] = '\0';
+
+    return str_copy;
 }
 
 int main(int argc, char *argv[]) {
