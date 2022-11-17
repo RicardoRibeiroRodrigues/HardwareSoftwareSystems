@@ -1,0 +1,8 @@
+*.html
+*.png
+*.jpg
+*.jpeg
+*.txt
+.vscode
+testing_curl.c
+web_downloader_conceitoC.c
