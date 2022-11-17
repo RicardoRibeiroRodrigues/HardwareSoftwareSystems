@@ -17,33 +17,50 @@ typedef struct {
     int fd;
 } res_args;
 
-int stats_global = 0;
+pid_t *child_processes;
+int num_of_links = 1;
+int link_index = -1;
+char **links;
+char **download_paths;
+
 void sigint_handler(int num) {
     printf("Você deseja sair mesmo ? [s/n]\n");
     char res;
     scanf("%c", &res);
+    int status_waitpid;
     if (res == 's') {
-        printf("Saindo...\n");
-        stats_global = 1;
+        for (int i = 0; i < min(link_index + 1, num_of_links); i++) {
+            pid_t ret = waitpid(child_processes[i], &status_waitpid, WNOHANG);
+            // O waitpid retorna o pid do processo se ainda estiver rodando.
+            if (ret == child_processes[i]) {
+                // Remove o donwload do arquivo que nao foi terminado.
+                remove(download_paths[i]);
+                kill(child_processes[i], SIGKILL);
+            }
+        }
     }
 }
 
 size_t write_data(void *ptr, size_t size, size_t nmemb, res_args *res_data) {
     size_t written = write(res_data->fd, ptr, nmemb);
-    if (stats_global == 1) {
-        printf("Terminando o processo e deletando arquivos nao terminados\n");
-        remove(res_data->path);
-        exit(0);
-    }
     return written;
 }
 
+void change_sigint_handler() {
+    struct sigaction sa;
+    // Default handler
+    sa.sa_handler = SIG_DFL;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    sigaction(SIGINT, &sa, NULL);
+}
+
 void download_file(const char *url, const char *path, CURL *curl) {
+    change_sigint_handler();
     int fd = open(path, O_WRONLY | O_CREAT, 0754);
     if (fd == -1) {
         printf("Problema ao abrir o arquivo\n");
     }
-    // FILE *fp = fopen(path, "wb");
     res_args res_args_download;
     res_args_download.fd = fd;
     res_args_download.path = (char *)path;
@@ -71,7 +88,7 @@ void download_file(const char *url, const char *path, CURL *curl) {
 
     // Libera a string do caminho para o arquivo da memória
     free((char *)path);
-    // Ver com o maciel esse aqui.
+    free((char *)url);
     curl_easy_cleanup(curl);
 
     // printf("{%s} baixada com sucesso!\n", url);
@@ -98,9 +115,9 @@ char **read_file_list(char *path, int *num_of_links) {
         str_din_append(str_dinamica, buf, ret);
     }
     close(fd1);
-    char **links = string_to_string_vec(str_dinamica, num_of_links);
+    char **link_list = string_to_string_vec(str_dinamica, num_of_links);
     str_din_destroy(&str_dinamica);
-    return links;
+    return link_list;
 }
 
 int main(int argc, char const *argv[]) {
@@ -114,12 +131,10 @@ int main(int argc, char const *argv[]) {
     int n_processes;
     // Flag para indicar se o usuario passou apenas o link como argumento, ao invés de um arquivo com -f.
     char only_link = 0;
-    char **links;
 
     // Se o usuario passou apenas o link como argumento, ao invés de um arquivo com -f,
     // o parse args vai retornar esse link, caso contrário, retorna o caminho para o arquivo com os links.
     char *ret = parse_args(argc, argv, &n_processes, &only_link);
-    int num_of_links = 1;
     if (only_link) {
         links = malloc(sizeof(char *));
         links[0] = ret;
@@ -152,20 +167,21 @@ int main(int argc, char const *argv[]) {
     printf("Iniciando os downloads!\n");
     printf("------------------------------\n");
 
-    pid_t child_processes[num_of_links];
+    child_processes = malloc(sizeof(pid_t) * num_of_links);
 
     pid_t child = 1;
-    int link_index = -1;
     int n_downloaded = 0;
+    download_paths = malloc(sizeof(char *) * num_of_links);
     for (int i = 0; i < min(n_processes, num_of_links); i++) {
         if (child != 0) {
             child = fork();
             link_index++;
             // Processo pai guarda o pid_t de todos os seus filhos.
             child_processes[link_index] = child;
+            download_paths[link_index] = build_out_path(links[link_index]);
         }
         if (child == 0) {
-            download_file(links[link_index], build_out_path(links[link_index]), curl);
+            download_file(links[link_index], download_paths[link_index], curl);
         }
     }
 
@@ -180,9 +196,11 @@ int main(int argc, char const *argv[]) {
         // Se ainda existirem links para serem baixados, cria um processo filho para baixar o proximo link.
         // O wait garante que o número de processos não utrapasse N.
         if (link_index < num_of_links) {
+            download_paths[link_index] = build_out_path(links[link_index]);
             child = fork();
+            child_processes[link_index] = child;
             if (child == 0) {
-                download_file(links[link_index], build_out_path(links[link_index]), curl);
+                download_file(links[link_index], download_paths[link_index], curl);
             }
         }
     }
@@ -193,8 +211,17 @@ int main(int argc, char const *argv[]) {
             free(links[i]);
         }
     }
+    // Libera os paths dos arquivos baixados da memoria.
+    for (int i = 0; i < num_of_links; i++) {
+        free(download_paths[i]);
+    }
 
+#ifdef DEBUG
+    printf("Limpando a memoria alocada dinamicamente\n");
+#endif
+    free(download_paths);
     free(links);
+    free(child_processes);
     curl_easy_cleanup(curl);
     return 0;
 }
