@@ -76,7 +76,6 @@ void download_file(const char *url, const char *path, CURL *curl) {
 
     // Fecha o arquivo.
     close(fd);
-    // fclose(fp);
 
     if (res != CURLE_OK) {
         fprintf(stderr, "[-] Could Not Fetch Webpage\n[+] Error : %s\n", curl_easy_strerror(res));
@@ -90,10 +89,8 @@ void download_file(const char *url, const char *path, CURL *curl) {
 
     // Libera a string do caminho para o arquivo da memória
     free((char *)path);
-    free((char *)url);
     curl_easy_cleanup(curl);
 
-    // printf("{%s} baixada com sucesso!\n", url);
     exit(0);
 }
 
@@ -130,7 +127,8 @@ int main(int argc, char const *argv[]) {
     s_i.sa_flags = 0;
     sigaction(SIGINT, &s_i, NULL);
 
-    int n_processes;
+    // Inicia por padrao com 4 processos.
+    int n_processes = 4;
     // Flag para indicar se o usuario passou apenas o link como argumento, ao invés de um arquivo com -f.
     char only_link = 0;
 

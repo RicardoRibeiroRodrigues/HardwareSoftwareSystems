@@ -110,10 +110,5 @@ char *build_out_path(char *link) {
         strcat(file_name, extention);
     }
 
-    // char *final_file = "./downloads/";
-    // strcat(final_file, file_name);
-    // printf("path: %s\n", final_file);
-    // fflush(stdout);
-    // free(file_name);
     return file_name;
 }
