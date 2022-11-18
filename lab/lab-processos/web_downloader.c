@@ -10,7 +10,7 @@
 // User defined
 #include "utils/utils.h"
 
-#define DEBUG 1
+// #define DEBUG 1
 
 typedef struct {
     char *path;
@@ -22,6 +22,7 @@ int num_of_links = 1;
 int link_index = -1;
 char **links;
 char **download_paths;
+int terminated = 0;
 
 void sigint_handler(int num) {
     printf("Você deseja sair mesmo ? [s/n]\n");
@@ -29,6 +30,7 @@ void sigint_handler(int num) {
     scanf("%c", &res);
     int status_waitpid;
     if (res == 's') {
+        terminated = 1;
         for (int i = 0; i < min(link_index + 1, num_of_links); i++) {
             pid_t ret = waitpid(child_processes[i], &status_waitpid, WNOHANG);
             // O waitpid retorna o pid do processo se ainda estiver rodando.
@@ -173,7 +175,7 @@ int main(int argc, char const *argv[]) {
     int n_downloaded = 0;
     download_paths = malloc(sizeof(char *) * num_of_links);
     for (int i = 0; i < min(n_processes, num_of_links); i++) {
-        if (child != 0) {
+        if ((child != 0) && !(terminated)) {
             child = fork();
             link_index++;
             // Processo pai guarda o pid_t de todos os seus filhos.
@@ -195,7 +197,7 @@ int main(int argc, char const *argv[]) {
         link_index++;
         // Se ainda existirem links para serem baixados, cria um processo filho para baixar o proximo link.
         // O wait garante que o número de processos não utrapasse N.
-        if (link_index < num_of_links) {
+        if ((link_index < num_of_links) && !(terminated)) {
             download_paths[link_index] = build_out_path(links[link_index]);
             child = fork();
             child_processes[link_index] = child;
