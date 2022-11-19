@@ -41,7 +41,7 @@ char **string_to_string_vec(str_din *string, int *num_of_links) {
     // Desse jeito, o máximo de links que podem ser passados é 20
     char **strings = malloc(20 * sizeof(char *));
 
-    while (string->data[actual] != '\0') {
+    while (1) {
         if (string->data[actual] == '\n') {
             int str_len = actual - previous + 1;
             strings[str_n] = malloc(str_len * sizeof(char));
@@ -53,6 +53,20 @@ char **string_to_string_vec(str_din *string, int *num_of_links) {
             // Incrementa o numero de strings no vetor.
             str_n++;
             previous = actual + 1;
+        }
+        if (string->data[actual] == '\0') {
+            int str_len = actual - previous + 1;
+            if (str_len > 5) {
+                strings[str_n] = malloc(str_len * sizeof(char));
+                for (int i = previous; i < actual; i++) {
+                    strings[str_n][i - previous] = string->data[i];
+                }
+                // Adiciona o \0 para deixar a string valida
+                strings[str_n][str_len - 1] = '\0';
+                // Incrementa o numero de strings no vetor.
+                str_n++;
+            }
+            break;
         }
         actual++;
     }
