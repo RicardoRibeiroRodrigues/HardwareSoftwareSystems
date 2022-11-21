@@ -54,6 +54,7 @@ int main() {
     }
 
     sem_destroy(&semaforo);
+    free(tids);
 
     return 0;
 }
